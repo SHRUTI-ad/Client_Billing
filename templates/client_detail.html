@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{ client.name }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+  <div>
+    <a href="{{ url_for('clients_list') }}" class="text-decoration-none small"><i class="bi bi-arrow-left"></i> Clients</a>
+    <h1 class="page-title h3 mt-1 mb-1">{{ client.name }}</h1>
+    <p class="text-muted mb-0">
+      {{ client.phone or 'No phone number' }}
+      {% if not client.is_active %}<span class="badge text-bg-secondary ms-1">Inactive</span>{% endif %}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('client_edit', client_id=client.id) }}" class="btn btn-outline-secondary">Edit</a>
+    <form method="post" action="{{ url_for('client_delete', client_id=client.id) }}" onsubmit="return confirm('Delete this client and all related records?');">
+      <button type="submit" class="btn btn-outline-danger">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card stat-card stat-clients h-100"><div class="card-body">
+      <div class="stat-label">Current Package</div>
+      <p class="stat-value">{{ fmt_money(client.package_for_month(current_month)) }}</p>
+      <div class="small text-muted">{{ month_label(current_month) }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card stat-budget h-100"><div class="card-body">
+      <div class="stat-label">Previous Balance</div>
+      <p class="stat-value amount-budget">{{ fmt_money(client.opening_balance) }}</p>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card stat-paid h-100"><div class="card-body">
+      <div class="stat-label">Total Received</div>
+      <p class="stat-value amount-paid">{{ fmt_money(client.total_paid) }}</p>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card stat-pending h-100"><div class="card-body">
+      <div class="stat-label">Pending to Receive</div>
+      <p class="stat-value amount-pending">{{ fmt_money(client.pending) }}</p>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card card-soft mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Record Payment</h2>
+        <form method="post" action="{{ url_for('payments') }}" class="row g-2">
+          <input type="hidden" name="client_id" value="{{ client.id }}">
+          <div class="col-md-6">
+            <label class="form-label">Amount received</label>
+            <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Date</label>
+            <input type="date" name="payment_date" class="form-control" value="{{ today }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Payment received from</label>
+            <input type="text" name="received_from" class="form-control" placeholder="Name of the person" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Place</label>
+            <input type="text" name="place" class="form-control" placeholder="Where it was taken">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Notes</label>
+            <input type="text" name="notes" class="form-control">
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-brand btn-sm">Save Payment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card card-soft">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Transaction History</h2>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Particulars</th>
+                <th class="text-end">Added</th>
+                <th class="text-end">Received</th>
+                <th class="text-end">Balance</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in ledger %}
+              <tr>
+                <td class="text-nowrap">{{ row.date.strftime('%d %b %Y') }}</td>
+                <td>{{ row.particulars }}</td>
+                <td class="text-end">{% if row.added %}{{ fmt_money(row.added) }}{% else %}—{% endif %}</td>
+                <td class="text-end amount-paid">{% if row.deducted %}{{ fmt_money(row.deducted) }}{% else %}—{% endif %}</td>
+                <td class="text-end amount-pending">{{ fmt_money(row.balance) }}</td>
+                <td class="text-end">
+                  {% if row.kind == 'opening' %}
+                    <a class="small" href="{{ url_for('client_edit', client_id=client.id) }}">Edit</a>
+                  {% elif row.kind == 'charge' %}
+                    <a class="small" href="{{ url_for('charge_edit', charge_id=row.ref_id) }}">Edit</a>
+                  {% elif row.kind == 'payment' %}
+                    <a class="small" href="{{ url_for('payment_edit', payment_id=row.ref_id) }}">Edit</a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <div>
+    <h1 class="page-title h3 mb-1">{{ month_label(selected_month) }}</h1>
+    <p class="text-muted mb-0">Month by month record of packages, amounts received, and pending dues</p>
+  </div>
+  <form method="get" class="d-flex gap-2">
+    <select name="month" class="form-select" onchange="this.form.submit()">
+      {% for m in months %}
+      <option value="{{ m }}" {% if m == selected_month %}selected{% endif %}>{{ month_label(m) }}</option>
+      {% endfor %}
+    </select>
+    <a href="{{ url_for('client_new') }}" class="btn btn-brand text-nowrap">Add Client</a>
+  </form>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card stat-card stat-clients h-100"><div class="card-body">
+      <div class="stat-label">Clients</div>
+      <p class="stat-value">{{ rows|length }}</p>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card stat-budget h-100"><div class="card-body">
+      <div class="stat-label">Current Package</div>
+      <p class="stat-value amount-budget">{{ fmt_money(month_package) }}</p>
+      <div class="small text-muted">{{ month_label(selected_month) }} · for every client</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card stat-paid h-100"><div class="card-body">
+      <div class="stat-label">Received</div>
+      <p class="stat-value amount-paid">{{ fmt_money(month_received) }}</p>
+      <div class="small text-muted">{{ month_label(selected_month) }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card stat-pending h-100"><div class="card-body">
+      <div class="stat-label">Total Pending</div>
+      <p class="stat-value amount-pending">{{ fmt_money(total_pending) }}</p>
+    </div></div>
+  </div>
+</div>
+
+<div class="card card-soft">
+  <div class="card-body p-0">
+    {% if rows %}
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th class="ps-3">Client</th>
+            <th>Phone</th>
+            <th class="text-end">Current Package</th>
+            <th class="text-end">Received</th>
+            <th class="text-end pe-3">Pending</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td class="ps-3">
+              <a href="{{ url_for('client_detail', client_id=row.client.id) }}" class="fw-semibold text-decoration-none">{{ row.client.name }}</a>
+            </td>
+            <td>{{ row.client.phone or '—' }}</td>
+            <td class="text-end">{% if row.package %}{{ fmt_money(row.package) }}{% else %}—{% endif %}</td>
+            <td class="text-end amount-paid">{% if row.received %}{{ fmt_money(row.received) }}{% else %}—{% endif %}</td>
+            <td class="text-end pe-3 amount-pending">{{ fmt_money(row.pending) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      No clients yet. <a href="{{ url_for('client_new') }}">Add your first client</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
